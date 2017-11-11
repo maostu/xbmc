@@ -89,8 +89,9 @@ protected:
 
   bool decodeInSoftwareOnThisTarget( const & std::string pPlatfrom, AVCodecID pCodec );
   std::map< std::string, AVCodecID> m_noHardwareDecode = {{"BCM2835", AV_CODEC_ID_HEVC}};
-  bool decodeInCustomFPSOnThisTarget( const & std::string pPlatfrom, AVCodecID pCoded, std::float_t & pTimeBase );
-  std::map< std::string, std::pair< AVCodedID, std::float_t >> m_customTimeBase = {{"BCM2835", std::make_pair<AVCodedID, std::float_t>( AV_CODEC_ID_HEVC, 0.04)}};
+  bool decodeInCustomFPSOnThisTarget( const & std::string pPlatfrom, AVCodecID pCodec, AVRational & pTimeBase );
+  std::map< std::string, std::pair< AVCodedID, AVRational >> m_customTimeBase = {
+     {"BCM2835", std::make_pair<AVCodedID, AVRational>( AV_CODEC_ID_HEVC, AVRational { .num = 1, .den = 25})}};
   
   
   AVFrame* m_pFrame;
