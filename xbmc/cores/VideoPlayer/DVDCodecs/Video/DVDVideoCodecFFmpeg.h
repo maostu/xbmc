@@ -27,6 +27,7 @@
 #include "DVDVideoPPFFmpeg.h"
 #include <string>
 #include <vector>
+#include <map>
 
 extern "C" {
 #include "libavfilter/avfilter.h"
@@ -86,6 +87,12 @@ protected:
   void SetFilters();
   void UpdateName();
 
+  bool decodeInSoftwareOnThisTarget( const & std::string pPlatfrom, AVCodecID pCodec );
+  std::map< std::string, AVCodecID> m_noHardwareDecode = {{"BCM2835", AV_CODEC_ID_HEVC}};
+  bool decodeInCustomFPSOnThisTarget( const & std::string pPlatfrom, AVCodecID pCoded, std::float_t & pTimeBase );
+  std::map< std::string, std::pair< AVCodedID, std::float_t >> m_customTimeBase = {{"BCM2835", std::make_pair<AVCodedID, std::float_t>( AV_CODEC_ID_HEVC, 0.04)}};
+  
+  
   AVFrame* m_pFrame;
   AVFrame* m_pDecodedFrame;
   AVCodecContext* m_pCodecContext;

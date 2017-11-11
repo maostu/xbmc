@@ -363,7 +363,8 @@ bool CDVDVideoCodecFFmpeg::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options
       tryhw = true;
 #endif
 #ifdef HAS_MMAL
-    tryhw = true;
+    if(CSettings::GetInstance().GetBool(CSettings::SETTING_VIDEOPLAYER_USEMMAL))
+      tryhw = true;
 #endif
     if (tryhw && m_decoderState == STATE_NONE)
     {
@@ -1166,3 +1167,39 @@ void CDVDVideoCodecFFmpeg::SetHardware(IHardwareDecoder* hardware)
   m_pHardware = hardware;
   UpdateName();
 }
+
+bool CDVDVideoCodecFFmpeg::decodeInSoftwareOnThisTarget(const int& string pPlatform, AVCodecID pCodec )
+{
+   auto decodeInSoftware = m_noHardwareDecode.find( pPlatform );
+   if( decodeInSoftware != m_noHardwareDecode.end() )
+   {
+      return ( 0 != decodeInSoftware->second & pCodec )
+   }
+   else
+   {
+      return false;
+   }
+}
+
+bool CDVDVideoCodecFFmpeg::decodeInCustomFPSOnThisTarget( const & std::string pPlatfrom, AVCodecID pCoded, std::float_t & pTimeBase )
+{
+   auto customTimeBaseIt = m_customTimeBase.find( pPlatform );
+   if( customTimeBaseIt != m_customTimeBase.end() )
+   {
+      if ( 0 != customTimeBaseIt->second.first & pCodec )
+      {
+         pTimeBase = customTimeBaseIt->second.second;
+         return true;
+      }
+      else
+      {
+         return false;
+      }
+   }
+   else
+   {
+      return false;
+   }
+}
+
+
