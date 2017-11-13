@@ -368,16 +368,17 @@ bool CDVDVideoCodecFFmpeg::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options
       tryhw = true;
 #endif
     
-    std::string& cpuHardware = g_sysinfo.GetCPUHardware();
+    std::string cpuHardware = g_cpuInfo.getCPUHardware();
+    cpuHardware.erase(remove_if(cpuHardware.begin(), cpuHardware.end(), [](char c) { return !std::isalnum(c); } ), cpuHardware.end());
     
     if( decodeInSoftwareOnThisTarget( cpuHardware, pCodec->id ) )
     {
        tryhw = false;
-       CLog::Log(LOGNOTICE,"CDVDVideoCodecFFmpeg::Open() Codec %s is decoded in software on platform %s",pCodec->long_name ? pCodec->long_name : pCodec->name, cpuHardware);
+       CLog::Log(LOGNOTICE,"CDVDVideoCodecFFmpeg::Open() Codec %s is decoded in software on platform %s with revision %s",pCodec->long_name ? pCodec->long_name : pCodec->name, cpuHardware.c_str(), g_cpuInfo.getCPURevision().c_str());
     }
     else
     {
-       CLog::Log(LOGNOTICE,"CDVDVideoCodecFFmpeg::Open() There seems to be hardware supported decoding for %s on %s",pCodec->long_name ? pCodec->long_name : pCodec->name, cpuHardware);
+       CLog::Log(LOGNOTICE,"CDVDVideoCodecFFmpeg::Open() There seems to be hardware supported decoding for %s on %s with revision %s",pCodec->long_name ? pCodec->long_name : pCodec->name, cpuHardware.c_str(), g_cpuInfo.getCPURevision().c_str());
     }
     
     if (tryhw && m_decoderState == STATE_NONE)
@@ -392,14 +393,14 @@ bool CDVDVideoCodecFFmpeg::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options
       m_pCodecContext->thread_safe_callbacks = 1;
       
       AVRational customRational;
-      if( decodeInCustomFPSOnThisTarget( cpuHardware,  pCodec->id, customRational ) )
+      if( decodeInCustomFPSOnThisTarget( g_cpuInfo.getCPUHardware(),  pCodec->id, customRational ) )
       {
          m_pCodecContext->time_base=customRational;
-         CLog::Log(LOGNOTICE,"CDVDVideoCodecFFmpeg::Open() There is a custom time_base rational for %s on platform %s",pCodec->long_name ? pCodec->long_name : pCodec->name, cpuHardware);
+         CLog::Log(LOGNOTICE,"CDVDVideoCodecFFmpeg::Open() There is a custom time_base rational for %s on platform %s",pCodec->long_name ? pCodec->long_name : pCodec->name, cpuHardware.c_str());
       }
       else
       {
-         CLog::Log(LOGNOTICE,"CDVDVideoCodecFFmpeg::Open() There is NO custom time_base rational for %s on platform %s",pCodec->long_name ? pCodec->long_name : pCodec->name, cpuHardware);
+         CLog::Log(LOGNOTICE,"CDVDVideoCodecFFmpeg::Open() There is NO custom time_base rational for %s on platform %s",pCodec->long_name ? pCodec->long_name : pCodec->name, cpuHardware.c_str());
       }
       
       m_decoderState = STATE_SW_MULTI;
@@ -1194,7 +1195,7 @@ void CDVDVideoCodecFFmpeg::SetHardware(IHardwareDecoder* hardware)
   UpdateName();
 }
 
-bool CDVDVideoCodecFFmpeg::decodeInSoftwareOnThisTarget(const int& string pPlatform, AVCodecID pCodec )
+bool CDVDVideoCodecFFmpeg::decodeInSoftwareOnThisTarget(const std::string& pPlatform, AVCodecID pCodec )
 {
    auto decodeInSoftware = m_noHardwareDecode.find( pPlatform );
    if( decodeInSoftware != m_noHardwareDecode.end() )
@@ -1207,7 +1208,7 @@ bool CDVDVideoCodecFFmpeg::decodeInSoftwareOnThisTarget(const int& string pPlatf
    }
 }
 
-bool CDVDVideoCodecFFmpeg::decodeInCustomFPSOnThisTarget( const & std::string pPlatfrom, AVCodecID pCoded, AVRational & pTimeBase )
+bool CDVDVideoCodecFFmpeg::decodeInCustomFPSOnThisTarget( const std::string& pPlatform, AVCodecID pCodec, AVRational& pTimeBase )
 {
    auto customTimeBaseIt = m_customTimeBase.find( pPlatform );
    if( customTimeBaseIt != m_customTimeBase.end() )
