@@ -247,6 +247,7 @@ enum AVPixelFormat CDVDVideoCodecFFmpeg::GetFormat(struct AVCodecContext * avctx
       MMAL::CDecoder* dec = new MMAL::CDecoder(ctx->m_processInfo, ctx->m_hints);
       if(dec->Open(avctx, ctx->m_pCodecContext, *cur, ctx->m_uSurfacesCount))
       {
+        CLog::Log(LOGNOTICE, "CDVDVideoCodecFFmpeg::GetFormat - Creating MMAL(%ix%i)", avctx->width, avctx->height);
         ctx->m_processInfo.SetVideoPixelFormat(pixFmtName ? pixFmtName : "");
         ctx->SetHardware(dec);
         return *cur;
@@ -261,6 +262,7 @@ enum AVPixelFormat CDVDVideoCodecFFmpeg::GetFormat(struct AVCodecContext * avctx
   ctx->m_processInfo.SetVideoPixelFormat(pixFmtName ? pixFmtName : "");
   ctx->m_processInfo.SetSwDeinterlacingMethods();
   ctx->m_decoderState = STATE_HW_FAILED;
+  CLog::Log(LOGDEBUG,"CDVDVideoCodecFFmpeg::%s Entering hardware failed state for codec %s", __FUNCTION__, avctx->codec->name);
   return avcodec_default_get_format(avctx, fmt);
 }
 
@@ -680,7 +682,10 @@ int CDVDVideoCodecFFmpeg::Decode(uint8_t* pData, int iSize, double dts, double p
   len = avcodec_decode_video2(m_pCodecContext, m_pDecodedFrame, &iGotPicture, &avpkt);
 
   if (m_decoderState == STATE_HW_FAILED && !m_pHardware)
-    return VC_REOPEN;
+  {
+     CLog::Log(LOGERROR, "CDVDVideoCodecFFmpeg::%s - Hardware not available!",__FUNCTION__);
+     return VC_REOPEN;
+  }
 
   if(m_iLastKeyframe < m_pCodecContext->has_b_frames + 2)
     m_iLastKeyframe = m_pCodecContext->has_b_frames + 2;
@@ -1200,7 +1205,7 @@ bool CDVDVideoCodecFFmpeg::decodeInSoftwareOnThisTarget(const std::string& pPlat
    auto decodeInSoftware = m_noHardwareDecode.find( pPlatform );
    if( decodeInSoftware != m_noHardwareDecode.end() )
    {
-      return ( 0 != decodeInSoftware->second & pCodec )
+      return ( 0 != (decodeInSoftware->second & pCodec) );
    }
    else
    {
@@ -1213,7 +1218,7 @@ bool CDVDVideoCodecFFmpeg::decodeInCustomFPSOnThisTarget( const std::string& pPl
    auto customTimeBaseIt = m_customTimeBase.find( pPlatform );
    if( customTimeBaseIt != m_customTimeBase.end() )
    {
-      if ( 0 != customTimeBaseIt->second.first & pCodec )
+      if ( 0 != (customTimeBaseIt->second.first & pCodec) )
       {
          pTimeBase = customTimeBaseIt->second.second;
          return true;
